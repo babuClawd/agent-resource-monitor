@@ -20,3 +20,17 @@ Because this service gates access to wallet cost telemetry endpoints, auth relia
 - Add regression test: same API key should authenticate across repeated requests.
 - Add negative test: wrong key fails.
 - Ensure no raw API key is logged in server logs or error payloads.
+
+## 2026-03-18 — Solana RPC commitment consistency for telemetry reliability
+
+### Context observed
+- `src/services/solana.ts` creates a `Connection` with commitment `'confirmed'`.
+- Balance, signatures, and parsed transaction calls all run through that shared connection.
+
+### Reliability note
+Using a single, explicit commitment level across all telemetry reads avoids subtle mismatches where a signature appears before its parsed transaction metadata is available at a stronger commitment. For cost monitoring APIs, that consistency helps prevent intermittent "Transaction not found" style noise during active slot updates.
+
+### Practical guidance
+- Keep one explicit commitment policy per environment (`confirmed` for lower latency, `finalized` for stricter stability).
+- Document the trade-off in README / operations notes so downstream agents interpret temporary gaps correctly.
+- If future requirements include strict accounting exports, prefer `finalized` for export jobs while keeping `confirmed` for live dashboards.
