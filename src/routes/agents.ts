@@ -36,7 +36,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // Generate API key
     const apiKey = generateApiKey();
-    const apiKeyHash = await hashApiKey(apiKey);
+    const apiKeyHash = hashApiKey(apiKey);
 
     // Create agent
     const agents = await query<Agent>(

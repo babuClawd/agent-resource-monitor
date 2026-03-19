@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { query } from '../db/client';
 import { Agent } from '../types';
 import { logger } from '../utils/logger';
@@ -42,7 +42,7 @@ export async function authenticateAgent(
     // Find agent by comparing hashed API key
     const agents = await query<Agent>(
       'SELECT * FROM agents WHERE api_key_hash = $1',
-      [await hashApiKey(apiKey)]
+      [hashApiKey(apiKey)]
     );
 
     if (agents.length === 0) {
@@ -65,15 +65,19 @@ export async function authenticateAgent(
   }
 }
 
-export async function hashApiKey(apiKey: string): Promise<string> {
-  return bcrypt.hash(apiKey, 12);
-}
-
-export async function verifyApiKey(
-  apiKey: string,
-  hash: string
-): Promise<boolean> {
-  return bcrypt.compare(apiKey, hash);
+/**
+ * Hash an API key using SHA-256.
+ *
+ * API keys are high-entropy random strings (256-bit), so a fast
+ * deterministic hash is appropriate — unlike passwords, there is no
+ * brute-force risk that would require bcrypt's slow KDF.
+ *
+ * Using a deterministic hash also allows direct DB lookups via
+ * `WHERE api_key_hash = $1` instead of fetching all rows and
+ * comparing one-by-one.
+ */
+export function hashApiKey(apiKey: string): string {
+  return createHash('sha256').update(apiKey).digest('hex');
 }
 
 export function generateApiKey(): string {
