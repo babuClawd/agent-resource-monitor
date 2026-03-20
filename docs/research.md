@@ -34,3 +34,23 @@ Using a single, explicit commitment level across all telemetry reads avoids subt
 - Keep one explicit commitment policy per environment (`confirmed` for lower latency, `finalized` for stricter stability).
 - Document the trade-off in README / operations notes so downstream agents interpret temporary gaps correctly.
 - If future requirements include strict accounting exports, prefer `finalized` for export jobs while keeping `confirmed` for live dashboards.
+
+## 2026-03-20 — Solana commitment policy for snapshot-grade reporting
+
+### Additional recommendation
+Use two commitment tiers by intent:
+
+1. **Realtime reads** (`confirmed`)
+   - Suitable for rapid polling and near-live balance UX.
+2. **Persisted accounting snapshots** (`finalized`)
+   - Suitable for burn-rate analytics, daily spend summaries, and alert thresholds.
+
+This split keeps latency low for interactive monitoring while improving confidence for numbers that may trigger automated actions.
+
+### Suggested low-risk implementation follow-up
+- Add `SOLANA_SNAPSHOT_COMMITMENT` (default `finalized`) for historical writes/reporting paths.
+- Include commitment metadata in persisted snapshot records so downstream agents can reason about data confidence.
+
+### References
+- Solana commitment overview: `https://docs.solana.com/cluster/commitments`
+- Solana RPC docs: `https://solana.com/docs/rpc`
